@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "python",
+            "request": "launch",
+            "name": "Launch Skill",
+            // Specify path to the downloaded local adapter(for python) file
+            "program": "${workspaceRoot}/local_debugger.py",
+            "osx": {
+                "preLaunchTask": "build",
+                "pythonPath": "${workspaceRoot}/.venv/skill_env/bin/python",
+                "args": [
+                    // port number on your local host where the alexa requests will be routed to
+                    "--portNumber", "3001",
+                    // name of your python main skill file
+                    "--skillEntryFile", "${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/hello_world.py",
+                    // name of your lambda handler
+                    "--lambdaHandler", "handler"
+                ],
+            },
+            "windows": {
+                "preLaunchTask": "build",
+                "pythonPath": "${workspaceRoot}/.venv/skill_env/Scripts/python.exe",
+                "args": [
+                    // port number on your local host where the alexa requests will be routed to
+                    "--portNumber", "3001",
+                    // name of your python main skill file
+                    "--skillEntryFile", "${workspaceRoot}/.venv/skill_env/Lib/site-packages/hello_world.py",
+                    // name of your lambda handler
+                    "--lambdaHandler", "handler"
+                ],
+            },
+            "linux": {
+                "preLaunchTask": "build",
+                "pythonPath": "${workspaceRoot}/.venv/skill_env/bin/python",
+                "args": [
+                    // port number on your local host where the alexa requests will be routed to
+                    "--portNumber", "3001",
+                    // name of your python main skill file
+                    "--skillEntryFile", "${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/hello_world.py",
+                    // name of your lambda handler
+                    "--lambdaHandler", "handler"
+                ],
+            },
+            
+        }
+    ]
+}

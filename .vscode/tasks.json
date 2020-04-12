@@ -1,0 +1,50 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "create_env",
+            "type": "shell",
+            "osx": {
+                "command": "${workspaceRoot}/hooks/post_new_hook.sh ."
+            },
+            "windows": {
+                "command": "${workspaceRoot}/hooks/post_new_hook.ps1 ."
+            },
+            "linux": {
+                "command": "${workspaceRoot}/hooks/post_new_hook.sh ."
+            }
+        },{
+            "label": "install_dependencies",
+            "type": "shell",
+            "osx": {
+                "command": ".venv/skill_env/bin/pip -q install -r ${workspaceRoot}/lambda/py/requirements.txt",
+            },
+            "windows": {
+                "command": ".venv/skill_env/Scripts/pip -q install -r ${workspaceRoot}/lambda/py/requirements.txt",
+            },
+            "linux": {
+                "command": ".venv/skill_env/bin/pip -q install -r ${workspaceRoot}/lambda/py/requirements.txt",
+            },
+            "dependsOn": [
+                "create_env"
+            ]
+        },{
+            "label": "build",
+            "type": "shell",
+            "osx": {
+                "command": "cp -r ${workspaceRoot}/lambda/py/ ${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/",
+            },
+            "windows": {
+                "command": "xcopy \"${workspaceRoot}\\lambda\\py\" \"${workspaceRoot}\\.venv\\skill_env\\Lib\\site-packages\" /s /e /h /y",
+            },
+            "linux": {
+                "command": "cp -r ${workspaceRoot}/lambda/py/ ${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/",
+            },            
+            "dependsOn": [
+                "install_dependencies"
+            ]
+        }
+    ]
+}

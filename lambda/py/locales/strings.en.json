@@ -1,0 +1,10 @@
+{
+    "en": {
+      "WELCOME_MESSAGE": "Welcome, you can say Hello or Help. Which would you like to try?",
+      "HELLO_MSG": "Hello Python World from Classes!",
+      "HELP_MSG": "You can say hello to me! How can I help?",
+      "GOODBYE_MSG": "Goodbye!",
+      "REFLECTOR_MSG": "You just triggered %{intent}",
+      "ERROR": "Sorry, I had trouble doing what you asked. Please try again."
+    }
+}
