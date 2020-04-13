@@ -6,8 +6,8 @@ Amazon recommends using Lambda functions despite they are not easy to debug.
 While you can log to a CloudWatch log, you can't hit a breakpoint and step into the code. 
  
 This makes live debugging of Alexa requests a very hard task.
-In this post, we will implement a custom skill for Amazon Alexa by using Node.js, npm and AWS Lambda Functions. This skill is basically a Hello World example. 
-With this post you will be able to create a custom skill for Amazon Alexa, implement functionality by using Node.js and start your custom skill both from your local computer and from AWS.
+In this post, we will implement a custom skill for Amazon Alexa by using Python, npm and AWS Lambda Functions. This skill is basically a Hello World example. 
+With this post you will be able to create a custom skill for Amazon Alexa, implement functionality by using Python and start your custom skill both from your local computer and from AWS.
 This post contains materials from different resources that can be seen on Resources section.
 
 ## Prerequisites
@@ -37,11 +37,11 @@ For creating the Alexa Skill, we will use de ASK CLI previously configured. Firs
 ```
 This command will run and interactive step-by-step creation process:
 
-1. The first thing the ASK CLI is going to ask us is the runtime of our Skill. In our case, `Node.js v10`:
+1. The first thing the ASK CLI is going to ask us is the runtime of our Skill. In our case, `Python3`:
 
 ![image](img/runtime.png)
 
-2. The second step is the template of the Skill that our Skill is going to base on. In our case, we will select `Hello World` template:
+2. The second step is the template of the Skill that our Skill is going to base on. In our case, we will select `Hello World (Using Classes)` template:
 
 ![image](img/template.png)
 
@@ -59,141 +59,185 @@ These are the main files of the project:
     │
     ├───.vscode
     │       launch.json
+    │       tasks.json
     ├───hooks
     ├───lambda
-    │   └───custom
+    │   └───py
     │         ├───errors
     │         ├───intents
     │         ├───interceptors
-    │         ├───utilities
-    │         ├─── index.js
-    │         ├─── local-debugger.js
-    │         └─── package.json
+    │         ├───locales
+    │         ├─── hello_world.py
+    │         └─── requirements.txt
     ├───models
     │       es-ES.json
-    └───skill.json
+    ├───skill.json
+    └───local_debugger.py
+
 
 ```
 
 * .ask: folder which contains the ASK CLI's config file. This config files will remain empty until we execute the command `ask deploy`
-* `.vscode/launch.json`: Launch preferences to run locally your Skill for local testing. This setting launch `lambda/custom/local-debugger.js`. This script runs a server on http://localhost:3001 for debug the Skill.
+* `.vscode/launch.json`: Launch preferences to run locally your Skill for local testing and executes all the tasks in `.vscode/tasks.json`. This setting launch `local_debugger.py`. This script runs a server on http://localhost:3001 for debug the Skill.
 * hooks: A folder that contains the hook scripts. Amazon provides two hooks, post_new_hook and pre_deploy_hook.
-  * `post_new_hook`: executed after the Skill creation. Inn Node.js runs `npm install` in each sourceDir in `skill.json`
-  * `pre_deploy_hook`: executed before the Skill deployment. In Node.js runs `npm install` in each sourceDir in `skill.json` as well.
-* lambda/custom: A folder that contains the source code for the skill's AWS Lambda function:
-  * `index.js`: the lambda main entry point.
-  * `utilities/languageStrings.js`: i18n dictionaries used by the library `i18next` which allow us to run same in Skill in different configuration languages.
-  * `package.json`: this file is core to the Node.js ecosystem and is a basic part of understanding and working with Node.js, npm, and even modern JavaScript
-  * `utilities/util.js`: file with helpful functions.
-  * `local-debugger.js`: used for debug our skill locally.
+  * `post_new_hook`: executed after the Skill creation. In Python creates a Virtual Environment located at `.venv/skill_env`.
+  * `pre_deploy_hook`: executed before the Skill deployment. In python creates the folder `lambda/py/lambda_upload` where will be stored all the necessary to upload the lambda to AWS..
+* lambda/py: A folder that contains the source code for the skill's AWS Lambda function:
+  * `hello_world.py`: the lambda main entry point.
+  * `locales`: i18n dictionaries used by the library `python-i18n` which allow us to run same in Skill in different configuration languages.
+  * `requirementes.txt`: this file stores the Python dependencies of our project and is a basic part of understanding and working with Python and pip.
   * `errors`: folder that contains all Error handlers.
   * `intents`: folder that contains all Intent handlers.
   * `interceptors`: here you can find all interceptors.
 * models – A folder that contains interaction models for the skill. Each interaction model is defined in a JSON file named according to the locale. For example, es-ES.json.
 * `skill.json` – The skill manifest. One of the most important files in our project.
+* `local_debugger.py`: used for debug our skill locally.
 
 
-### Lambda function in Javascript
 
-The ASK SDK for Node.js makes it easier for you to build highly engaging skills by allowing you to spend more time implementing features and less time writing boilerplate code.
+### Lambda function in Python
 
-You can find documentation, samples and helpful links in their official [GitHub repository](https://github.com/alexa/alexa-skills-kit-sdk-for-nodejs)
+The ASK SDK for Python makes it easier for you to build highly engaging skills by allowing you to spend more time implementing features and less time writing boilerplate code.
 
-The main Javascript file in our lambda project is `index.js` located in `lambda/custom` folder. This file contains all handlers, interceptors and exports the Skill handler in `exports.handler`.
+You can find documentation, samples and helpful links in their official [GitHub repository](https://github.com/alexa/alexa-skills-kit-sdk-for-python)
 
-The `exports.handler` function is executed every time AWS Lambda is initiated for this particular function. 
+The main Python file in our lambda project is `hello_world.py` located in `lambda/py` folder. This file contains all handlers, interceptors and exports the Skill handler in `handler` object.
+
+The `handler` object is executed every time AWS Lambda is initiated for this particular function. 
 In theory, an AWS Lambda function is just a single function. This means that we need to define dispatching logic so a single function request can route to appropriate code, hence the handlers.
 
-```javascript
+```python
 
-  /**
-  * This handler acts as the entry point for your skill, routing all request and response
-  * payloads to the handlers above. Make sure any new handlers or interceptors you've
-  * defined are included below. The order matters - they're processed top to bottom 
-  * */
-  exports.handler = Alexa.SkillBuilders.custom()
-      .addRequestHandlers(
-          LaunchRequestHandler,
-          HelloWorldIntentHandler,
-          HelpIntentHandler,
-          CancelAndStopIntentHandler,
-          FallbackIntentHandler,
-          SessionEndedRequestHandler,
-          IntentReflectorHandler)
-      .addErrorHandlers(
-          ErrorHandler)
-      .addRequestInterceptors(
-          LocalisationRequestInterceptor)
-      .lambda();
+  from ask_sdk_core.skill_builder import SkillBuilder
+  from ask_sdk_model import Response
+  from intents import LaunchRequestHandler as launch
+  from intents import HelloWorldIntentHandler as hello
+  from intents import HelpIntentHandler as help
+  from intents import CancelOrStopIntentHandler as cancel
+  from intents import SessionEndedRequestHandler as session
+  from intents import IntentReflectorHandler as reflector
+  from errors import CatchAllExceptionHandler as errors
+  from interceptors import LocalizationInterceptor as locale
+
+  # The SkillBuilder object acts as the entry point for your skill, routing all request and response
+  # payloads to the handlers above. Make sure any new handlers or interceptors you've
+  # defined are included below. The order matters - they're processed top to bottom.
+  sb = SkillBuilder()
+
+  sb.add_request_handler(launch.LaunchRequestHandler())
+  sb.add_request_handler(hello.HelloWorldIntentHandler())
+  sb.add_request_handler(help.HelpIntentHandler())
+  sb.add_request_handler(cancel.CancelOrStopIntentHandler())
+  sb.add_request_handler(session.SessionEndedRequestHandler())
+  # make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+  sb.add_request_handler(reflector.IntentReflectorHandler())
+
+  sb.add_global_request_interceptor(locale.LocalizationInterceptor())
+
+  sb.add_exception_handler(errors.CatchAllExceptionHandler())
+
+  handler = sb.lambda_handler()
 
 ```
-It is important to take a look into the `LaunchRequestHandler` as an example of Alexa Skill handler written in Node.js:
+It is important to take a look into the `LaunchRequestHandler` as an example of Alexa Skill handler written in Python:
 
-```javascript
+```python
 
-  const LaunchRequestHandler = {
-      //Method that returns true if this handler can execute the current request
-      canHandle(handlerInput) {
-          return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
-      },
-      //Method that will process the request if the method above returns true
-      handle(handlerInput) {
-          const speakOutput = handlerInput.t('WELCOME_MSG');
+  class LaunchRequestHandler(AbstractRequestHandler):
+      """Handler for Skill Launch."""
 
-          return handlerInput.responseBuilder
-              .speak(speakOutput)
-              .reprompt(speakOutput)
-              .getResponse();
-      }
-  };
+      def can_handle(self, handler_input):
+          # type: (HandlerInput) -> bool
+
+          return ask_utils.is_request_type("LaunchRequest")(handler_input)
+
+      def handle(self, handler_input):
+          # type: (HandlerInput) -> Response
+          speak_output = i18n.t("strings.WELCOME_MESSAGE")
+
+          return (
+              handler_input.response_builder
+              .speak(speak_output)
+              .ask(speak_output)
+              .response
+          )
 
 ```
 
 ## Building the Skill with Visual Studio Code
 
-Inside `package.json`, we will almost always find metadata specific to the project. 
-This metadata helps identify the project and acts as a baseline for users and contributors to get information about the project.
+The build of the skill is fully automated with the `launch.json` and `tasks.json` in `.vscode` folder . 
+The first file is used for running the skill locally but before that moment we will execute some tasks defined in the second file which are:
 
-Here is how this file looks like:
+1. `create_env`: this task will execute the `hooks\post_new_hook`. This scprit will do these tasks:
+   * Will install if it is not installed the `virtualenv` library using `pip`.
+   * After install it, it will create a new Python Virtual Environment if it is not created at `.venv/skill_env`
+2. `install_dependencies`: This task will install all dependencies located in `lambda/py/requirements.txt` using the Python Virtual Environment created above.
+3. `build`: Finally, it will copy all the source code from `lambda\py` to the Python Virtual environment `site-packages` folder.   
 
+Here you have the `tasks.json` where you can find the tasks explained above and the commands separated per operative system:
 ```json
-
   {
-    "name": "alexa-nodejs-lambda-helloworld",
-    "version": "1.0.0",
-    "description": "Alexa HelloWorld example with NodeJS",
-    "main": "index.js",
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/xavidop/alexa-nodejs-lambda-helloworld.git"
-    },
-    "author": "Xavier Portilla Edo",
-    "license": "Apache-2.0",
-    "dependencies": {
-      "ask-sdk-core": "^2.7.0",
-      "ask-sdk-model": "^1.19.0",
-      "aws-sdk": "^2.326.0",
-      "i18next": "^15.0.5"
-    }
+      // See https://go.microsoft.com/fwlink/?LinkId=733558
+      // for the documentation about the tasks.json format
+      "version": "2.0.0",
+      "tasks": [
+          {
+              "label": "create_env",
+              "type": "shell",
+              "osx": {
+                  "command": "${workspaceRoot}/hooks/post_new_hook.sh ."
+              },
+              "windows": {
+                  "command": "${workspaceRoot}/hooks/post_new_hook.ps1 ."
+              },
+              "linux": {
+                  "command": "${workspaceRoot}/hooks/post_new_hook.sh ."
+              }
+          },{
+              "label": "install_dependencies",
+              "type": "shell",
+              "osx": {
+                  "command": ".venv/skill_env/bin/pip -q install -r ${workspaceRoot}/lambda/py/requirements.txt",
+              },
+              "windows": {
+                  "command": ".venv/skill_env/Scripts/pip -q install -r ${workspaceRoot}/lambda/py/requirements.txt",
+              },
+              "linux": {
+                  "command": ".venv/skill_env/bin/pip -q install -r ${workspaceRoot}/lambda/py/requirements.txt",
+              },
+              "dependsOn": [
+                  "create_env"
+              ]
+          },{
+              "label": "build",
+              "type": "shell",
+              "osx": {
+                  "command": "cp -r ${workspaceRoot}/lambda/py/ ${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/",
+              },
+              "windows": {
+                  "command": "xcopy \"${workspaceRoot}\\lambda\\py\" \"${workspaceRoot}\\.venv\\skill_env\\Lib\\site-packages\" /s /e /h /y",
+              },
+              "linux": {
+                  "command": "cp -r ${workspaceRoot}/lambda/py/ ${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/",
+              },            
+              "dependsOn": [
+                  "install_dependencies"
+              ]
+          }
+      ]
   }
 
 ```
 
-With Javascript or Node.js the term of build is a little bit different. For build our Skill, we can run the following command:
+After that, the skill is ready to be launched locally!
 
-```bash
+So for build your skill the only thing you have to do is run it locally in Visual Studio Code:
 
-  npm install
+![image](img/run.png)
 
-```
 
-This command installs a package, and any packages that it depends on. 
-If the package has a package-lock or shrink-wrap file, the installation of dependencies will be driven by that.
-
-It could be the way to build our Alexa Skill.
+**NOTE:** pay attention with folder `${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/` in Linux and OSX in the task `build`. You have to replace `python3.8` if you are using another version of Python.
 
 ## Running the Skill with Visual Studio Code
 
@@ -202,36 +246,66 @@ The `launch.json` file in `.vscode` folder has the configuration for Visual Stud
 ```json
 
   {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Skill",
-            // Specify path to the downloaded local adapter(for Node.js) file
-            "program": "${workspaceRoot}/lambda/custom/local-debugger.js",
-            "args": [
-                // port number on your local host where the alexa requests will be routed to
-                "--portNumber", "3001",
-                // name of your Node.js main skill file
-                "--skillEntryFile", "${workspaceRoot}/lambda/custom/index.js",
-                // name of your lambda handler
-                "--lambdaHandler", "handler"
-            ]
-        }
-    ]
-}
+      "version": "0.2.0",
+      "configurations": [
+          {
+              "type": "python",
+              "request": "launch",
+              "name": "Launch Skill",
+              "justMyCode": false,
+              // Specify path to the downloaded local adapter(for python) file
+              "program": "${workspaceRoot}/local_debugger.py",
+              "osx": {
+                  "preLaunchTask": "build",
+                  "pythonPath": "${workspaceRoot}/.venv/skill_env/bin/python",
+                  "args": [
+                      // port number on your local host where the alexa requests will be routed to
+                      "--portNumber", "3001",
+                      // name of your python main skill file
+                      "--skillEntryFile", "${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/hello_world.py",
+                      // name of your lambda handler
+                      "--lambdaHandler", "handler"
+                  ],
+              },
+              "windows": {
+                  "preLaunchTask": "build",
+                  "pythonPath": "${workspaceRoot}/.venv/skill_env/Scripts/python.exe",
+                  "args": [
+                      // port number on your local host where the alexa requests will be routed to
+                      "--portNumber", "3001",
+                      // name of your python main skill file
+                      "--skillEntryFile", "${workspaceRoot}/.venv/skill_env/Lib/site-packages/hello_world.py",
+                      // name of your lambda handler
+                      "--lambdaHandler", "handler"
+                  ],
+              },
+              "linux": {
+                  "preLaunchTask": "build",
+                  "pythonPath": "${workspaceRoot}/.venv/skill_env/bin/python",
+                  "args": [
+                      // port number on your local host where the alexa requests will be routed to
+                      "--portNumber", "3001",
+                      // name of your python main skill file
+                      "--skillEntryFile", "${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/hello_world.py",
+                      // name of your lambda handler
+                      "--lambdaHandler", "handler"
+                  ],
+              },
+              
+          }
+      ]
+  }
 
 ```
-This configuration file will execute the following command:
+This configuration file will execute the steps explained in the previous section and the will run the following command:
 
 ```bash
 
-  node --inspect-brk=28448 lambda\custom\local-debugger.js --portNumber 3001 --skillEntryFile lambda/custom/index.js --lambdaHandler handler
+  .venv/skill_env/scripts/python local_debugger.py --portNumber 3001 --skillEntryFile .venv/skill_env/Lib/site-packages/hello_world.py --lambdaHandler handler
 
 ```
 
-This configuration uses the `local-debugger.js` file which runs a [TCP server](https://nodejs.org/api/net.html) listening on http://localhost:3001
+This configuration uses the `local_debugger.py` file which runs a [TCP server](https://docs.python.org/3/library/socket.html) listening on http://localhost:3001
 
 For a new incoming skill request a new socket connection is established.
 From the data received on the socket the request body is extracted, parsed into JSON and passed to the skill invoker's lambda handler.
@@ -244,9 +318,11 @@ After configuring our launch.json file and understanding how the local debugger 
 
 After executing it, you can send Alexa POST requests to http://localhost:3001.
 
+**NOTE:** pay attention with folder `${workspaceRoot}/.venv/skill_env/lib/python3.8/site-packages/hello_world.py` in Linux and OSX in the task `build`. You have to replace `python3.8` if you are using another version of Python.
+
 ## Debugging the Skill with Visual Studio Code
 
-Following the steps before, now you can set up breakpoints wherever you want inside all JS files in order to debug your skill:
+Following the steps before, now you can set up breakpoints wherever you want inside all Python files in the `site-package` folder of the Python Virtual Environment in order to debug your skill:
 
 ![image](img/debug.png)
 
@@ -335,6 +411,10 @@ When the local skill project has never been deployed, ASK CLI creates a new skil
 3. Looks in your skill project's manifest (skill.json file) for AWS Lambda endpoints. These are listed in the manifest.apis.<skill type>.endpoint or manifest.apis.<skill type>.regions.<region code>.endpoint objects (for example, manifest.apis.custom.endpoint or manifest.apis.smartHome.regions.NA.endpoint). Each endpoint object contains a sourceDir value, and optionally a uri value. ASK CLI upload the contents of the sourceDir folder to the corresponding AWS Lambda function and names the Lambda function the same as the uri value. For more details about how ASK CLI performs uploads to Lambda, see AWS Lambda deployment details.
 4. Looks in your skill project folder for in-skill products, and if it finds any, uploads them to your skill. For more information about in-skill products, see the In-Skill Purchasing Overview.
 
+In Python there are some more steps. Before deploy your Alexa Skill, the script `pre_deploy_hook` in `hooks` folder will be executed. This script will be run the following tasks:
+1. It will copy all the files of your `site-packages` of your Python Virtual Environment in a new folder called `lambda_upload` located in `lambda/py` folder.
+2. Then will copy the source code of your skill written in Python located in `lambda/py` in `lambda/py/lambda_puload`.
+3. Finally, this new folder as a `.zip` will be deployed to AWS.
 
 After the execution of the above command, we will have the `config` file properly filled:
 
@@ -343,33 +423,33 @@ After the execution of the above command, we will have the `config` file properl
   {
     "deploy_settings": {
       "default": {
-        "skill_id": "amzn1.ask.skill.ed038d5e-61eb-4383-a480-04e3398b398d",
-        "was_cloned": false,
-        "merge": {},
+        "skill_id": "amzn1.ask.skill.53ad2510-5758-48db-9c43-e4263a2055db",
         "resources": {
-          "manifest": {
-            "eTag": "faa883c92faf9a495407f0d03d5e3790"
-          },
-          "interactionModel": {
-            "es-ES": {
-              "eTag": "c9e7fd862be0dd3b21252b8bca53c7f7"
-            }
-          },
           "lambda": [
             {
               "alexaUsage": [
                 "custom/default"
               ],
-              "arn": "arn:aws:lambda:us-east-1:141568529918:function:ask-custom-alexa-nodejs-lambda-helloworld-default",
+              "arn": "arn:aws:lambda:us-east-1:141568529918:function:ask-custom-alexa-python-lambda-helloworld-default",
               "awsRegion": "us-east-1",
-              "codeUri": "lambda/custom",
-              "functionName": "ask-custom-alexa-nodejs-lambda-helloworld-default",
-              "handler": "index.handler",
-              "revisionId": "ef2707ee-a366-484d-a4b7-3826a44692dd",
-              "runtime": "nodejs10.x"
+              "codeUri": "lambda/py/lambda_upload",
+              "functionName": "ask-custom-alexa-python-lambda-helloworld-default",
+              "handler": "hello_world.handler",
+              "revisionId": "b95879d0-d039-4fa2-b7e5-96746f36689f",
+              "runtime": "python3.6"
             }
-          ]
-        }
+          ],
+          "manifest": {
+            "eTag": "3809be2d04cfb7f90dd0fa023920e0bd"
+          },
+          "interactionModel": {
+            "es-ES": {
+              "eTag": "235f49ae9fa329de1b7e2489ec7e4622"
+            }
+          }
+        },
+        "was_cloned": false,
+        "merge": {}
       }
     }
   }
@@ -403,8 +483,8 @@ The Alexa Developer Console will send a HTTPS request to the ngrok endpoint (htt
 
 ## Conclusion 
 
-This was a basic tutorial to learn Alexa Skills using Node.js.
-As you have seen in this example, the Alexa Skill Kit for Node.js and the Alexa Tools like ASK CLI can help us a lot and also they give us the possibility to create skills in an easy way. 
+This was a basic tutorial to learn Alexa Skills using Python.
+As you have seen in this example, the Alexa Skill Kit for Python and the Alexa Tools like ASK CLI can help us a lot and also they give us the possibility to create skills in an easy way. 
 I hope this example project is useful to you.
 
 That's all folks!

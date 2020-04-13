@@ -5,6 +5,7 @@
             "type": "python",
             "request": "launch",
             "name": "Launch Skill",
+            "justMyCode": false,
             // Specify path to the downloaded local adapter(for python) file
             "program": "${workspaceRoot}/local_debugger.py",
             "osx": {
